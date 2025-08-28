@@ -15,13 +15,13 @@
 
       --btn:#1f1f1f; --btnTxt:#fff; --accent:#888;
 
-      --blink:0.8s;    /* période globale */
-      --gblink:0.55s;  /* vert rapide */
-      --yblink: 0.45s;   /* vitesse du drapeau jaune (plus rapide) */
+      --blink:0.8s;     /* période globale */
+      --gblink:0.55s;   /* vert rapide */
+      --yblink:0.45s;   /* jaune plus rapide */
 
-      /* Filigrane (plus clair) */
-      --wmColor:#333333;  /* gris plus lumineux */
-      --wmOpacity:.60;    /* plus visible */
+      /* Filigrane */
+      --wmColor:#333333;
+      --wmOpacity:.60;
     }
 
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -30,18 +30,18 @@
     .display{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--black);z-index:1}
     .message{position:relative;z-index:2;font-weight:900;text-transform:uppercase;text-align:center;letter-spacing:.04em;line-height:0.98;white-space:pre-line;font-size:36vmin;color:var(--white);padding:.05em .1em}
 
-    /* Filigrane par défaut (plus clair) */
+    /* Filigrane */
     .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0}
     .watermark span{
       font-weight:900;text-transform:uppercase;letter-spacing:.12em;
       color:var(--wmColor);opacity:var(--wmOpacity);
       white-space:pre-line;text-align:center;line-height:.85;
       font-size:clamp(3rem,18vw,22rem);
-      -webkit-text-stroke:1px rgba(255,255,255,.10); /* léger contour */
-      text-shadow:0 0 6px rgba(255,255,255,.08);     /* halo doux */
+      -webkit-text-stroke:1px rgba(255,255,255,.10);
+      text-shadow:0 0 6px rgba(255,255,255,.08);
     }
 
-    /* Damier réaliste */
+    /* Damier */
     .bg-checkered{
       --sq:min(16vmin,18vh);
       background:
@@ -90,16 +90,17 @@
     .btn-green{background:var(--green)}
     .btn-yellow{background:var(--yellow);color:#111}
     .btn-blue{background:var(--blue)}
-    .btn-check{background:linear-gradient(45deg,#fff 25%,#000 25%,#000 50%,#fff 50%,#fff 75%,#000 75%,#000 100%);color:#fff}
-    .btn-outline{background:transparent;border:2px solid var(--accent);color:#ddd}
+    .btn-check{background:linear-gradient(45deg,#fff 25%, #000 25%, #000 50%, #fff 50%, #fff 75%, #000 75%, #000 100%); color:#fff}
+    .btn-outline{background:transparent; border:2px solid var(--accent); color:#ddd}
 
-    /* Modal Position */
+    /* Modals (Position & Penalty) */
     .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);z-index:6000;opacity:0;pointer-events:none;transition:opacity .2s ease}
     .modal.open{opacity:1;pointer-events:auto}
     .sheet{background:#111;border:2px solid #333;border-radius:16px;padding:16px;max-width:min(95vw,700px);width:95vw}
     .sheet h3{margin:0 0 10px 0;font-size:clamp(16px,4vw,22px);text-align:center;letter-spacing:.06em}
-    .grid-nums{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-    .num{background:#222;color:#fff;border:2px solid #333;border-radius:12px;padding:clamp(10px,2.2vh,18px);font-weight:900;font-size:clamp(18px,4.5vw,28px)}
+    .grid-nums{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:10px}
+    .num,.chip{background:#222;color:#fff;border:2px solid #333;border-radius:12px;padding:clamp(10px,2.2vh,18px);font-weight:900;font-size:clamp(18px,4.5vw,28px);text-align:center}
+    .row-title{margin:8px 0 6px;font-weight:800;letter-spacing:.06em;text-align:center;color:#ddd}
     .close-row{display:flex;justify-content:center;margin-top:12px}
     .close{background:#1f1f1f;color:#fff;border:2px solid #444;border-radius:999px;padding:8px 18px;font-weight:800}
   </style>
@@ -111,8 +112,10 @@ RACING</span></div>
     <div class="message" id="message"></div>
   </div>
 
+  <!-- Menu principal -->
   <div class="menu" id="menu">
     <button class="btn" data-action="position">Position</button>
+    <button class="btn" data-action="penalty">Penalty</button>
     <button class="btn" data-action="box">BOX BOX</button>
     <button class="btn" data-action="rpm">7000+</button>
     <button class="btn" data-action="focus">FOCUS</button>
@@ -125,11 +128,24 @@ RACING</span></div>
     <button class="btn btn-outline" data-action="reset">Réinitialiser</button>
   </div>
 
+  <!-- MODAL Position -->
   <div class="modal" id="posModal">
     <div class="sheet" role="dialog" aria-modal="true">
       <h3>Choisir la position</h3>
       <div class="grid-nums" id="posGrid"></div>
       <div class="close-row"><button class="close" id="posClose">Fermer</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL Penalty -->
+  <div class="modal" id="penModal">
+    <div class="sheet" role="dialog" aria-modal="true">
+      <h3>Sélectionner une pénalité</h3>
+      <div class="row-title">Temps</div>
+      <div class="grid-nums" id="penGridTime"></div>
+      <div class="row-title">Tours</div>
+      <div class="grid-nums" id="penGridLap"></div>
+      <div class="close-row"><button class="close" id="penClose">Fermer</button></div>
     </div>
   </div>
 
@@ -141,9 +157,15 @@ RACING</span></div>
   const watermark = document.getElementById('watermark');
   const menu      = document.getElementById('menu');
   const toggle    = document.getElementById('menuToggle');
+
   const posModal  = document.getElementById('posModal');
   const posGrid   = document.getElementById('posGrid');
   const posClose  = document.getElementById('posClose');
+
+  const penModal    = document.getElementById('penModal');
+  const penGridTime = document.getElementById('penGridTime');
+  const penGridLap  = document.getElementById('penGridLap');
+  const penClose    = document.getElementById('penClose');
 
   function restartAnimations(...els){ els.forEach(el=> el.style.animation='none'); void document.body.offsetHeight; els.forEach(el=> el.style.animation=''); }
   function openMenu(open){ menu.classList.toggle('open', open); }
@@ -167,6 +189,7 @@ RACING</span></div>
   }
   window.addEventListener('resize', ()=>{ if(message.textContent) fitMessageSize(); });
 
+  /* POSITION modal */
   function openPosModal(){ hideWatermark(); openMenu(false); posModal.classList.add('open'); }
   function closePosModal(){ posModal.classList.remove('open'); }
   for(let i=1;i<=30;i++){
@@ -185,13 +208,70 @@ RACING</span></div>
   posClose.addEventListener('click', closePosModal);
   posModal.addEventListener('click', e=>{ if(e.target===posModal) closePosModal(); });
 
-  toggle.addEventListener('click', e=>{ e.preventDefault(); openMenu(!menu.classList.contains('open')); });
+  /* PENALTY modal */
+  function openPenModal(){ hideWatermark(); openMenu(false); penModal.classList.add('open'); }
+  function closePenModal(){ penModal.classList.remove('open'); }
 
+  // Temps : secondes (sec.) et minutes (min)
+  const seconds = [5,10,15,20,30];
+  seconds.forEach(val=>{
+    const label = `${val}sec.`;   // ← remplace 's' par 'sec.'
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent=label;
+    b.addEventListener('click', ()=>{
+      clearFlags();
+      display.classList.add('invert'); message.classList.add('invert-text');
+      showMessage(`+${label}\nPENALTY`);
+      restartAnimations(display, message);
+      closePenModal();
+    });
+    penGridTime.appendChild(b);
+  });
+  // 1 minute
+  {
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent='1min';
+    b.addEventListener('click', ()=>{
+      clearFlags();
+      display.classList.add('invert'); message.classList.add('invert-text');
+      showMessage(`+1min\nPENALTY`);
+      restartAnimations(display, message);
+      closePenModal();
+    });
+    penGridTime.appendChild(b);
+  }
+
+  // Tours : 1 → 5  (message "+ X LAP(S)")
+  for(let laps=1;laps<=5;laps++){
+    const b=document.createElement('button');
+    b.className='chip';
+    b.textContent = laps === 1 ? '1 LAP' : `${laps} LAPS`;
+    b.addEventListener('click', ()=>{
+      clearFlags();
+      display.classList.add('invert'); message.classList.add('invert-text');
+      const unit = laps > 1 ? 'LAPS' : 'LAP';
+      showMessage(`+ ${laps} ${unit}\nPENALTY`);
+      restartAnimations(display, message);
+      closePenModal();
+    });
+    penGridLap.appendChild(b);
+  }
+
+  penClose.addEventListener('click', closePenModal);
+  penModal.addEventListener('click', e=>{ if(e.target===penModal) closePenModal(); });
+
+  /* MENU */
+  document.getElementById('menuToggle').addEventListener('click', e=>{
+    e.preventDefault(); openMenu(!menu.classList.contains('open'));
+  });
+
+  /* Actions du menu */
   menu.addEventListener('click', (e)=>{
     const btn=e.target.closest('button'); if(!btn) return;
     const action=btn.dataset.action; const flag=btn.dataset.flag;
 
     if(action==='position'){ openPosModal(); return; }
+    if(action==='penalty'){ openPenModal(); return; }
     hideWatermark();
 
     if(action==='box'){ clearFlags(); display.classList.add('invert'); message.classList.add('invert-text'); showMessage('BOX BOX'); restartAnimations(display, message); openMenu(false); return; }
@@ -212,6 +292,7 @@ RACING</span></div>
     }
   });
 
+  /* Tap écran: retour au noir + watermark */
   display.addEventListener('click', ()=>{ showWatermark(); clearFlags(); clearMessage(); });
 </script>
 </body>
