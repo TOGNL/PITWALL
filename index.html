@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>GUISNEL Racing PITWALL</title>
+  <title>Tableau Pilote – Falcon Racing</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#000000" />
@@ -15,7 +15,7 @@
 
       --btn:#1f1f1f; --btnTxt:#fff; --accent:#888;
 
-      --blink:0.8s;     /* période globale */
+      --blink:0.6s;     /* période globale pour certaines anims */
       --gblink:0.55s;   /* vert rapide */
       --yblink:0.45s;   /* jaune plus rapide */
 
@@ -28,7 +28,22 @@
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#000;color:#fff;user-select:none}
 
     .display{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--black);z-index:1}
-    .message{position:relative;z-index:2;font-weight:900;text-transform:uppercase;text-align:center;letter-spacing:.04em;line-height:0.98;white-space:pre-line;font-size:36vmin;color:var(--white);padding:.05em .1em}
+    .message{
+  position:relative;
+  z-index:2;
+  display:flex;                /* ajout flex */
+  align-items:center;          /* centre vertical */
+  justify-content:center;      /* centre horizontal */
+  font-weight:900;
+  text-transform:uppercase;
+  text-align:center;
+  letter-spacing:.04em;
+  line-height:0;
+  white-space:pre-line;
+  font-size:80vmin;
+  color:var(--white);
+  padding:.05em .1em;
+}
 
     /* Filigrane */
     .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0}
@@ -80,6 +95,12 @@
     .lastlap{animation:lastBg var(--blink) steps(1,end) infinite}
     .lastlap-text{animation:lastTxt var(--blink) steps(1,end) infinite}
 
+    /* Clignotement du chiffre (vert -> noir) avec vitesse réglable dynamiquement */
+    @keyframes countFlash {
+      0%,49%{ color: var(--green); }
+      50%,100%{ color: #000; } /* noir sur fond noir = invisible */
+    }
+
     /* Barre / Menu */
     .bar{position:fixed;left:0;right:0;bottom:0;padding:calc(10px + env(safe-area-inset-bottom)) 10px 10px;display:flex;justify-content:center;z-index:5001}
     .menu-toggle{appearance:none;border:0;border-radius:999px;background:var(--btn);color:var(--btnTxt);padding:clamp(12px,1.8vh,18px) clamp(20px,4vw,28px);font-size:clamp(16px,3.5vw,22px);font-weight:800}
@@ -103,28 +124,51 @@
     .row-title{margin:8px 0 6px;font-weight:800;letter-spacing:.06em;text-align:center;color:#ddd}
     .close-row{display:flex;justify-content:center;margin-top:12px}
     .close{background:#1f1f1f;color:#fff;border:2px solid #444;border-radius:999px;padding:8px 18px;font-weight:800}
+
+/* METEO */
+.border-flash-sun{animation:borderFlashSun 0.8s infinite alternate;}
+.border-flash-cloud{animation:borderFlashCloud 0.8s infinite alternate;}
+.border-flash-rain-slow{animation:borderFlashRain 1.2s infinite alternate;}
+.border-flash-rain-fast{animation:borderFlashRain 0.4s infinite alternate;}
+
+@keyframes borderFlashSun{
+  from{box-shadow:inset 0 0 0 20px transparent;}
+  to{box-shadow:inset 0 0 0 50px var(--yellow);}
+}
+@keyframes borderFlashCloud{
+  from{box-shadow:inset 0 0 0 20px transparent;}
+  to{box-shadow:inset 0 0 0 50px gray;}
+}
+@keyframes borderFlashRain{
+  from{box-shadow:inset 0 0 0 20px transparent;}
+  to{box-shadow:inset 0 0 0 50px var(--blue);}
+}
+
+
   </style>
 </head>
 <body>
   <div class="display" id="display">
     <div class="watermark" id="watermark"><span>GUISNEL
-RACING</span></div>
+RACING TEAM</span></div>
     <div class="message" id="message"></div>
   </div>
 
-  <!-- Menu principal -->
+
   <div class="menu" id="menu">
     <button class="btn" data-action="position">Position</button>
-    <button class="btn" data-action="penalty">Penalty</button>
-    <button class="btn" data-action="box">BOX BOX</button>
+    <button class="btn" data-action="box">BOX</button>
     <button class="btn" data-action="rpm">7000+</button>
     <button class="btn" data-action="focus">FOCUS</button>
+    <button class="btn" data-action="pit">PIT</button>
+    <button class="btn" data-action="lastlap">Dernier tour</button>
+    <button class="btn btn-check" data-flag="checkered">Damier</button>
+    <button class="btn" data-action="penalty">Penalty</button>
+    <button class="btn" data-action="meteo">METEO</button>
+    <button class="btn btn-blue" data-flag="blue">Drapeau Bleu</button>
     <button class="btn btn-green" data-flag="green">Drapeau vert</button>
     <button class="btn btn-yellow" data-flag="yellow">Drapeau jaune</button>
-    <button class="btn btn-check" data-flag="checkered">Damier</button>
     <button class="btn btn-yellow" data-action="fcy">FCY</button>
-    <button class="btn" data-action="lastlap">Dernier tour</button>
-    <button class="btn btn-blue" data-flag="blue">Bleu (clignote)</button>
     <button class="btn btn-outline" data-action="reset">Réinitialiser</button>
   </div>
 
@@ -149,6 +193,19 @@ RACING</span></div>
     </div>
   </div>
 
+  <!-- MODAL METEO -->
+<div class="modal" id="meteoModal">
+  <div class="sheet">
+    <h3>Météo</h3>
+    <button class="btn" data-weather="sun">☀️ Soleil</button>
+    <button class="btn" data-weather="cloud">☁️ Nuages</button>
+    <button class="btn" data-weather="rain-light">🌦️ Faible pluie</button>
+    <button class="btn" data-weather="rain-heavy">🌧️ Forte pluie</button>
+    <div class="close-row"><button class="close" id="meteoClose">Fermer</button></div>
+  </div>
+</div>
+
+
   <div class="bar"><button class="menu-toggle" id="menuToggle">MENU</button></div>
 
 <script>
@@ -167,11 +224,12 @@ RACING</span></div>
   const penGridLap  = document.getElementById('penGridLap');
   const penClose    = document.getElementById('penClose');
 
+  /* Helpers */
   function restartAnimations(...els){ els.forEach(el=> el.style.animation='none'); void document.body.offsetHeight; els.forEach(el=> el.style.animation=''); }
   function openMenu(open){ menu.classList.toggle('open', open); }
   function hideWatermark(){ if(watermark) watermark.style.display='none'; }
   function showWatermark(){ if(watermark) watermark.style.display='flex'; }
-  function clearFlags(){ display.className='display'; message.className='message'; message.style.color=''; }
+  function clearFlags(){ display.className='display'; message.className='message'; message.style.color=''; display.style.animation=''; message.style.animation=''; }
   function clearMessage(){ message.textContent=''; message.style.color=''; message.className='message'; }
   function showMessage(txt){ message.textContent=txt; fitMessageSize(); }
 
@@ -196,6 +254,7 @@ RACING</span></div>
     const b=document.createElement('button');
     b.className='num'; b.textContent=i;
     b.addEventListener('click',()=>{
+      clearPit(); // au cas où
       clearFlags();
       display.classList.add('invert');
       message.classList.add('invert-text');
@@ -212,13 +271,56 @@ RACING</span></div>
   function openPenModal(){ hideWatermark(); openMenu(false); penModal.classList.add('open'); }
   function closePenModal(){ penModal.classList.remove('open'); }
 
+/* METEO modal */
+const meteoModal=document.getElementById('meteoModal');
+const meteoClose=document.getElementById('meteoClose');
+
+menu.addEventListener('click',e=>{
+  if(e.target.dataset.action==="meteo"){
+    hideWatermark();
+    openMenu(false);
+    meteoModal.classList.add('open');
+  }
+});
+
+meteoModal.addEventListener('click',e=>{
+  if(e.target.dataset.weather){
+    clearFlags();
+    clearMessage();
+    display.className='display';
+  
+
+    if(e.target.dataset.weather==="sun"){
+      message.textContent="☀️";
+      display.classList.add('border-flash-sun');
+    }
+    if(e.target.dataset.weather==="cloud"){
+      message.textContent="☁️";
+      display.classList.add('border-flash-cloud');
+    }
+    if(e.target.dataset.weather==="rain-light"){
+      message.textContent="🌦️";
+      display.classList.add('border-flash-rain-slow');
+    }
+    if(e.target.dataset.weather==="rain-heavy"){
+      message.textContent="🌧️";
+      display.classList.add('border-flash-rain-fast');
+    }
+
+    meteoModal.classList.remove('open');
+  }
+});
+
+meteoClose.addEventListener('click',()=>meteoModal.classList.remove('open'));
+
   // Temps : secondes (sec.) et minutes (min)
   const seconds = [5,10,15,20,30];
   seconds.forEach(val=>{
-    const label = `${val}sec.`;   // ← remplace 's' par 'sec.'
+    const label = `${val}sec.`;  
     const b=document.createElement('button');
     b.className='chip'; b.textContent=label;
     b.addEventListener('click', ()=>{
+      clearPit();
       clearFlags();
       display.classList.add('invert'); message.classList.add('invert-text');
       showMessage(`+${label}\nPENALTY`);
@@ -227,11 +329,11 @@ RACING</span></div>
     });
     penGridTime.appendChild(b);
   });
-  // 1 minute
   {
     const b=document.createElement('button');
     b.className='chip'; b.textContent='1min';
     b.addEventListener('click', ()=>{
+      clearPit();
       clearFlags();
       display.classList.add('invert'); message.classList.add('invert-text');
       showMessage(`+1min\nPENALTY`);
@@ -241,12 +343,13 @@ RACING</span></div>
     penGridTime.appendChild(b);
   }
 
-  // Tours : 1 → 5  (message "+ X LAP(S)")
+  // Tours
   for(let laps=1;laps<=5;laps++){
     const b=document.createElement('button');
     b.className='chip';
     b.textContent = laps === 1 ? '1 LAP' : `${laps} LAPS`;
     b.addEventListener('click', ()=>{
+      clearPit();
       clearFlags();
       display.classList.add('invert'); message.classList.add('invert-text');
       const unit = laps > 1 ? 'LAPS' : 'LAP';
@@ -265,7 +368,6 @@ RACING</span></div>
     e.preventDefault(); openMenu(!menu.classList.contains('open'));
   });
 
-  /* Actions du menu */
   menu.addEventListener('click', (e)=>{
     const btn=e.target.closest('button'); if(!btn) return;
     const action=btn.dataset.action; const flag=btn.dataset.flag;
@@ -274,14 +376,17 @@ RACING</span></div>
     if(action==='penalty'){ openPenModal(); return; }
     hideWatermark();
 
-    if(action==='box'){ clearFlags(); display.classList.add('invert'); message.classList.add('invert-text'); showMessage('BOX BOX'); restartAnimations(display, message); openMenu(false); return; }
-    if(action==='rpm'){ clearFlags(); display.classList.add('invert'); message.classList.add('invert-text'); showMessage('7000+'); restartAnimations(display, message); openMenu(false); return; }
-    if(action==='focus'){ clearFlags(); display.classList.add('invert'); message.classList.add('invert-text'); showMessage('FOCUS'); restartAnimations(display, message); openMenu(false); return; }
-    if(action==='fcy'){ clearFlags(); display.classList.add('fcy'); message.classList.add('fcy-text'); showMessage('FCY'); restartAnimations(display, message); openMenu(false); return; }
-    if(action==='lastlap'){ clearFlags(); display.classList.add('lastlap'); message.classList.add('lastlap-text'); showMessage("LAST\nLAP"); restartAnimations(display, message); openMenu(false); return; }
-    if(action==='reset'){ showWatermark(); clearFlags(); clearMessage(); openMenu(false); return; }
+    if(action==='box'){ clearPit(); clearFlags(); display.classList.add('invert'); message.classList.add('invert-text'); showMessage('BOX'); restartAnimations(display, message); openMenu(false); return; }
+    if(action==='rpm'){ clearPit(); clearFlags(); display.classList.add('invert'); message.classList.add('invert-text'); showMessage('7000+'); restartAnimations(display, message); openMenu(false); return; }
+    if(action==='focus'){ clearPit(); clearFlags(); display.classList.add('invert'); message.classList.add('invert-text'); showMessage('FOCUS'); restartAnimations(display, message); openMenu(false); return; }
+    if(action==='fcy'){ clearPit(); clearFlags(); display.classList.add('fcy'); message.classList.add('fcy-text'); showMessage('FCY'); restartAnimations(display, message); openMenu(false); return; }
+    if(action==='lastlap'){ clearPit(); clearFlags(); display.classList.add('lastlap'); message.classList.add('lastlap-text'); showMessage("LAST\nLAP"); restartAnimations(display, message); openMenu(false); return; }
+    if(action==='reset'){ resetToWatermark(); openMenu(false); return; }
+
+    if(action==='pit'){ startPitCountdown(); openMenu(false); return; }
 
     if(flag){
+      clearPit();
       clearFlags(); clearMessage();
       if(flag==='green') display.classList.add('green-flash');
       else if(flag==='yellow') display.classList.add('yellow-swap');
@@ -292,8 +397,90 @@ RACING</span></div>
     }
   });
 
-  /* Tap écran: retour au noir + watermark */
-  display.addEventListener('click', ()=>{ showWatermark(); clearFlags(); clearMessage(); });
+  /* === PIT Countdown === */
+  let pitInterval=null;
+  let pitActive=false;
+
+  function clearPit(){
+    if(pitInterval){ clearInterval(pitInterval); pitInterval=null; }
+    pitActive=false;
+    message.style.animation='';
+    display.style.animation='';
+  }
+
+  function resetToWatermark(){
+    clearPit();
+    showWatermark();
+    clearFlags();
+    clearMessage();
+  }
+
+  function startPitCountdown(){
+    clearPit();
+    pitActive=true;
+    hideWatermark();
+    clearFlags();
+
+    let time=150;               // compteur en secondes
+    let beReadyStart=null;      // valeur de time quand BE READY démarre
+    let beReadyEnd=null;        // valeur de time quand BE READY doit s'arrêter (15 s après le début)
+
+    function render(){
+      clearFlags(); // enlève classes/clignotements antérieurs
+
+      // Démarrage de BE READY quand on passe sous 50s
+      if(time <= 50 && beReadyStart === null){
+        beReadyStart = time;
+        beReadyEnd   = time - 15; // s'arrête 15s plus tard (time a diminué)
+      }
+
+      // Phase BE READY (affichée tant que time > beReadyEnd)
+      if(beReadyStart !== null && time > beReadyEnd){
+        message.textContent = "BE READY";
+        message.style.color = "yellow";
+        message.style.fontSize = "28vmin";
+        // Le chrono continue en arrière-plan, donc on NE montre PAS le nombre ici
+      } else if (time > 0){
+        // Affichage du nombre géant (sans "s")
+        message.textContent = time;
+        message.style.color = "white";
+        fitMessageSize();
+      }
+
+      // Dernières 5 secondes : chiffre vert qui clignote vert/noir, de plus en plus vite
+      if(time <= 5 && time > 0){
+        message.textContent = time;         // s'assurer que le nombre est visible
+        fitMessageSize();
+        // vitesse : plus on approche de 0, plus c'est rapide
+        const step = 5 - time;              // 0..4
+        const speed = Math.max(0.15, 0.6 - step*0.1); // 0.6s -> 0.2s
+        message.style.animation = `countFlash ${speed}s steps(1,end) infinite`;
+      } else {
+        // hors dernière 5 secondes : pas d'animation texte
+        message.style.animation = '';
+      }
+
+      // Fin : 0 -> GO
+      if(time === 0){
+        clearPit();
+        message.textContent = "GO";
+        message.style.color = "lime";
+        fitMessageSize();
+        setTimeout(resetToWatermark, 1200);
+      }
+
+      time--;
+    }
+
+    render();
+    pitInterval = setInterval(()=>{
+      if(!pitActive){ clearPit(); return; }
+      render();
+    }, 1000);
+  }
+
+  /* Tap écran : retour watermark à tout moment */
+  display.addEventListener('click', resetToWatermark);
 </script>
 </body>
 </html>
